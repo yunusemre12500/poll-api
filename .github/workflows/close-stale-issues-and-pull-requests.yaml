@@ -2,7 +2,7 @@ name: Close Stale Issues and Pull Requests
 
 on:
   schedule:
-    - cron: "* * * * *"
+    - cron: "0 0 * * 6"
 
 jobs:
   close-stale-issues-and-pull-requests:
