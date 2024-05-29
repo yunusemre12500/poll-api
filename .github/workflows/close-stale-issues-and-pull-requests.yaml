@@ -1,0 +1,24 @@
+name: Close Stale Issues and Pull Requests
+
+on:
+  schedule:
+    - cron: "* * * * *"
+
+jobs:
+  close-stale-issues-and-pull-requests:
+    name: Run Stale
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Run Stale Action
+        uses: actions/stale@v4
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          days-before-stale: 7
+          days-before-close: 0
+          stale-issue-label: stale
+          close-issue-label: closed
+          stale-pr-label: stale
+          close-pr-label: closed

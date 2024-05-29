@@ -1,0 +1,7 @@
+.github
+build/
+website/
+.dockerignore
+.editorconfig
+.gitattributes
+.gitignore
