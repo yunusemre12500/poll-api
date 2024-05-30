@@ -18,4 +18,6 @@ COPY --chown=nonroot:nonroot --from=build \
 
 USER nonroot:nonroot
 
+STOPSIGNAL SIGTERM
+
 CMD [ "/usr/local/bin/poll-api" ]
