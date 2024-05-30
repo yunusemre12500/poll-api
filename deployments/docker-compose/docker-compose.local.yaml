@@ -1,0 +1,30 @@
+version: "3"
+
+services:
+  poll-api:
+    attach: false
+    build:
+      dockerfile: ./build/docker/Dockerfile
+    cap_drop: [ALL]
+    container_name: poll-api
+    cpu_count: 1
+    hostname: poll-api
+    init: false
+    mem_limit: 128mb
+    mem_reservation: 0
+    mem_swappiness: 0
+    memswap_limit: 0
+    network_mode: bridge
+    ports:
+      - host_ip: 127.0.0.1
+        protocol: tcp
+        published: 80
+        target: 3000
+    restart: on-failure:3
+    privileged: false
+    pull_policy: build
+    read_only: true
+    stdin_open: false
+    stop_grace_period: 60s
+    stop_signal: SIGTERM
+    tty: false
