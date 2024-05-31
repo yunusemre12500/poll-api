@@ -8,7 +8,6 @@ import (
 
 	"github.com/google/uuid"
 	application "github.com/yunusemre12500/poll-api/internal/application/poll/v1"
-	v1 "github.com/yunusemre12500/poll-api/internal/application/poll/v1"
 	domain "github.com/yunusemre12500/poll-api/internal/domain/poll/v1"
 )
 
@@ -214,7 +213,7 @@ func (controller *HTTPPollController) List(w http.ResponseWriter, r *http.Reques
 
 	switch acceptHeaderValue {
 	case "application/json":
-		var listedPolls []*v1.ListPollsResponseBody
+		var listedPolls []*application.ListPollsResponseBody
 
 		for _, poll := range polls {
 			listedPolls = append(listedPolls, poll.IntoListPollsResponseBody())
