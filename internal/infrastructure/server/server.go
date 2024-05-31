@@ -2,39 +2,45 @@ package server
 
 import (
 	"context"
+	"log"
 	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 type HTTPServer struct {
-	ctx context.Context
-	mux *http.ServeMux
-	srv *http.Server
+	ctx    context.Context
+	logger *logrus.Logger
+	mux    *http.ServeMux
+	srv    *http.Server
 }
 
-func NewHTTPServer(address string) *HTTPServer {
+func NewHTTPServer(logger *logrus.Logger, address string) *HTTPServer {
 	ctx := context.Background()
 
 	mux := http.NewServeMux()
 
 	srv := http.Server{
-		Addr:    address,
-		Handler: mux,
+		Addr:     address,
+		Handler:  mux,
+		ErrorLog: log.New(logger.Writer(), "Server", 0),
 	}
 
 	return &HTTPServer{
-		ctx: ctx,
-		mux: mux,
-		srv: &srv,
+		ctx:    ctx,
+		logger: logger,
+		mux:    mux,
+		srv:    &srv,
 	}
 }
 
 func (httpServer *HTTPServer) Start() {
-	slog.Info("Starting HTTP server...")
+	httpServer.logger.Info("Starting HTTP server...")
 
 	done := make(chan os.Signal, 1)
 
@@ -47,13 +53,13 @@ func (httpServer *HTTPServer) Start() {
 		}
 	}()
 
-	slog.Info("HTTP server started.")
+	httpServer.logger.Info("HTTP server started.")
 
 	<-done
 
 	ctx, cancel := context.WithTimeout(httpServer.ctx, 5*time.Second)
 
-	slog.Info("Shutting down HTTP server...")
+	httpServer.logger.Info("Shutting down HTTP server...")
 
 	defer cancel()
 
