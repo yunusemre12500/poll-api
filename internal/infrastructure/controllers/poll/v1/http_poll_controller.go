@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	application "github.com/yunusemre12500/poll-api/internal/application/poll/v1"
+	v1 "github.com/yunusemre12500/poll-api/internal/application/poll/v1"
 	domain "github.com/yunusemre12500/poll-api/internal/domain/poll/v1"
 )
 
@@ -140,7 +141,7 @@ func (controller *HTTPPollController) GetByID(w http.ResponseWriter, r *http.Req
 
 	switch acceptHeaderValue {
 	case "application/json":
-		if err = json.NewEncoder(w).Encode(poll); err != nil {
+		if err = json.NewEncoder(w).Encode(poll.IntoGetPollByIdResponseBody()); err != nil {
 			http.Error(w, "Failed to encode response body.", http.StatusInternalServerError)
 
 			return
@@ -213,7 +214,13 @@ func (controller *HTTPPollController) List(w http.ResponseWriter, r *http.Reques
 
 	switch acceptHeaderValue {
 	case "application/json":
-		if err = json.NewEncoder(w).Encode(&polls); err != nil {
+		var listedPolls []*v1.ListPollsResponseBody
+
+		for _, poll := range polls {
+			listedPolls = append(listedPolls, poll.IntoListPollsResponseBody())
+		}
+
+		if err = json.NewEncoder(w).Encode(&listedPolls); err != nil {
 			http.Error(w, "Failed to encode polls.", http.StatusInternalServerError)
 
 			return
