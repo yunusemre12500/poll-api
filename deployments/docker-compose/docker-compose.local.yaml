@@ -1,25 +1,71 @@
 version: "3"
 
+networks:
+  poll-api-private-subnet:
+    ipam:
+      config:
+        - subnet: 172.16.0.0/16
+    name: poll-api-private-subnet
+  poll-api-public-subnet:
+    ipam:
+      config:
+        - subnet: 172.32.0.0/16
+    name: poll-api-public-subnet
+
 services:
+  mongodb:
+    attach: false
+    cap_drop: [ALL]
+    container_name: mongodb
+    cpu_count: 1
+    hostname: mongodb
+    image: mongo:7.0.11
+    init: false
+    mem_limit: 512mb
+    mem_reservation: 0
+    mem_swappiness: 0
+    memswap_limit: 0
+    networks:
+      poll-api-private-subnet:
+        ipv4_address: 172.16.0.2
+    restart: on-failure:3
+    privileged: true
+    pull_policy: build
+    read_only: true
+    stdin_open: false
+    stop_grace_period: 60s
+    stop_signal: SIGTERM
+    tmpfs:
+      - /tmp
+    tty: false
   poll-api:
     attach: false
-    build:
-      dockerfile: ./build/docker/Dockerfile
     cap_drop: [ALL]
+    command:
+      - poll-api
+      - --bind-port=80
+      - --database-uri=mongodb://172.16.0.2:27017
     container_name: poll-api
     cpu_count: 1
+    depends_on:
+      - mongodb
     hostname: poll-api
+    image: yunusemre12500/poll-api:1.0.0
     init: false
     mem_limit: 128mb
     mem_reservation: 0
     mem_swappiness: 0
     memswap_limit: 0
-    network_mode: bridge
+    networks:
+      poll-api-private-subnet:
+        ipv4_address: 172.16.0.3
+      poll-api-public-subnet:
+        ipv4_address: 172.32.0.2
     ports:
       - host_ip: 127.0.0.1
         protocol: tcp
         published: 80
-        target: 3000
+        target: 80
     restart: on-failure:3
     privileged: false
     pull_policy: build
