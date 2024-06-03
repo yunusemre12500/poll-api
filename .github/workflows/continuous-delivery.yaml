@@ -47,7 +47,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          dirver: docker-container
+          builder: docker-container
           file: ./build/docker/Dockerfile
           push: true
           tags: ${{ steps.extract-metadata.outputs.tags }}
