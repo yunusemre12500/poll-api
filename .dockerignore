@@ -1,7 +1,12 @@
 .github
 build/
+configs/
+deployments/
 website/
 .dockerignore
 .editorconfig
 .gitattributes
 .gitignore
+LICENSE
+Makefile
+README.md
