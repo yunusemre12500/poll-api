@@ -1,232 +1,182 @@
 package v1
 
 import (
-	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
 
+	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	application "github.com/yunusemre12500/poll-api/internal/application/poll/v1"
 	domain "github.com/yunusemre12500/poll-api/internal/domain/poll/v1"
 )
 
 type HTTPPollController struct {
-	repository domain.PollRepository
+	service domain.PollService
 }
 
-func NewHTTPPollController(repository domain.PollRepository) *HTTPPollController {
+func NewHTTPPollController(service domain.PollService) *HTTPPollController {
 	return &HTTPPollController{
-		repository: repository,
+		service: service,
 	}
 }
 
-func (controller *HTTPPollController) AddRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("/v1/polls", func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodGet:
-			controller.List(w, r)
-		case http.MethodPost:
-			controller.Create(w, r)
-		default:
-			http.Error(w, fmt.Sprintf("Request method (%s) not supported for this route.", r.Method), http.StatusMethodNotAllowed)
-		}
-	})
-
-	mux.HandleFunc("/v1/polls/{id}", func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodGet:
-			controller.GetByID(w, r)
-		default:
-			http.Error(w, fmt.Sprintf("Request method (%s) not supported for this route.", r.Method), http.StatusMethodNotAllowed)
-		}
-	})
-}
-
-func (controller *HTTPPollController) Create(w http.ResponseWriter, r *http.Request) {
-	acceptHeaderValue := r.Header.Get("Accept")
-
-	if acceptHeaderValue == "" {
-		http.Error(w, "Accept header is missing.", http.StatusBadRequest)
-
-		return
-	} else if acceptHeaderValue != "application/json" {
-		http.Error(w, fmt.Sprintf("Requested response type (%s) not supported.", acceptHeaderValue), http.StatusBadRequest)
-
-		return
-	}
-
-	contentTypeHeaderValue := r.Header.Get("Content-Type")
-
-	if contentTypeHeaderValue == "" {
-		http.Error(w, "Content-Type header is missing.", http.StatusBadRequest)
-
-		return
-	} else if contentTypeHeaderValue != "application/json" {
-		http.Error(w, fmt.Sprintf("Requested Content-Type (%s) not supported.", contentTypeHeaderValue), http.StatusBadRequest)
-
-		return
-	}
-
+func (controller *HTTPPollController) Create(ctx *gin.Context) {
 	var createPollRequestBody *application.CreatePollRequestBody
 
-	switch contentTypeHeaderValue {
-	case "application/json":
-		if err := json.NewDecoder(r.Body).Decode(&createPollRequestBody); err != nil {
-			http.Error(w, "Failed to decode request body.", http.StatusBadRequest)
+	if err := ctx.ShouldBindJSON(&createPollRequestBody); err != nil {
+		ctx.JSON(http.StatusBadRequest, &gin.H{
+			"code":    "DecodeError",
+			"message": "Failed to decode request body.",
+		})
 
-			return
-		}
+		return
 	}
 
 	newPoll := domain.NewPollFromCreatePollRequestBody(createPollRequestBody)
 
-	err := controller.repository.Create(newPoll)
+	if err := controller.service.Create(ctx, newPoll); err != nil {
+		if err == domain.ErrPollExists {
+			ctx.JSON(http.StatusConflict, &gin.H{
+				"code":    "AlreadyExists",
+				"message": "Poll already exists.",
+			})
 
-	if err != nil {
-		http.Error(w, "Failed to save created poll. Please try again later.", http.StatusInternalServerError)
+			return
+		}
+
+		ctx.JSON(http.StatusInternalServerError, &gin.H{
+			"code":    "InternalServerError",
+			"message": "Failed to save created poll.",
+		})
 
 		return
 	}
 
-	switch acceptHeaderValue {
-	case "application/json":
-		w.Header().Set("Content-Type", "application/json")
-
-		w.WriteHeader(http.StatusCreated)
-
-		if err := json.NewEncoder(w).Encode(newPoll.IntoCreatePollResponseBody()); err != nil {
-			http.Error(w, "Failed to encode response body.", http.StatusInternalServerError)
-
-			return
-		}
-	}
+	ctx.JSON(http.StatusCreated, newPoll.IntoCreatePollResponseBody())
 }
 
-func (controller *HTTPPollController) GetByID(w http.ResponseWriter, r *http.Request) {
-	acceptHeaderValue := r.Header.Get("Accept")
+func (controller *HTTPPollController) GetByID(ctx *gin.Context) {
+	idParam := ctx.Param("id")
 
-	if acceptHeaderValue == "" {
-		http.Error(w, "Accept header is missing.", http.StatusBadRequest)
+	id, err := uuid.Parse(idParam)
 
-		return
-	} else if acceptHeaderValue != "application/json" {
-		http.Error(w, fmt.Sprintf("Requested response type (%s) not supported.", acceptHeaderValue), http.StatusBadRequest)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, &gin.H{
+			"code":    "InvalidPathParameter",
+			"message": "Failed to parse 'id' path parameter.",
+		})
 
 		return
 	}
 
-	id, err := uuid.Parse(r.PathValue("id"))
+	poll, err := controller.service.GetByID(ctx, &id)
 
 	if err != nil {
-		http.Error(w, "Failed to parse 'id' path parameter.", http.StatusBadRequest)
-
-		return
-	}
-
-	poll, err := controller.repository.GetByID(id)
-
-	if err != nil {
-		if err == domain.ErrNotFound {
-			http.Error(w, "Poll not found.", http.StatusNotFound)
+		if err == domain.ErrPollNotFound {
+			ctx.JSON(http.StatusNotFound, &gin.H{
+				"code":    "NotFound",
+				"message": "Poll not found.",
+			})
 
 			return
 		}
 
-		http.Error(w, "Failed to get poll.", http.StatusNotFound)
+		ctx.JSON(http.StatusInternalServerError, &gin.H{
+			"code":    "InternalServerError",
+			"message": "Failed to get poll by id.",
+		})
 
 		return
 	}
 
-	switch acceptHeaderValue {
-	case "application/json":
-		if err = json.NewEncoder(w).Encode(poll.IntoGetPollByIdResponseBody()); err != nil {
-			http.Error(w, "Failed to encode response body.", http.StatusInternalServerError)
-
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-
-		w.WriteHeader(http.StatusOK)
-	}
+	ctx.JSON(http.StatusOK, poll.IntoGetPollByIdResponseBody())
 }
 
-func (controller *HTTPPollController) List(w http.ResponseWriter, r *http.Request) {
-	acceptHeaderValue := r.Header.Get("Accept")
+func (controller *HTTPPollController) List(ctx *gin.Context) {
+	var limit uint
+	var offset int
 
-	if acceptHeaderValue == "" {
-		http.Error(w, "Accept header is missing.", http.StatusBadRequest)
+	limitQueryParamValue, exists := ctx.GetQuery("limit")
 
-		return
-	} else if acceptHeaderValue != "application/json" {
-		http.Error(w, fmt.Sprintf("Requested response type (%s) not supported.", acceptHeaderValue), http.StatusBadRequest)
+	if exists {
+		limitQueryParamParsedValue, err := strconv.ParseInt(limitQueryParamValue, 0, 64)
 
-		return
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, &gin.H{
+				"code":    "InvalidQueryParameter",
+				"message": "Failed to parse 'limit' query parameter.",
+			})
+
+			return
+		}
+
+		limit = uint(limitQueryParamParsedValue)
+	} else {
+		limit = 100
 	}
 
-	limit, err := strconv.ParseUint(r.URL.Query().Get("limit"), 10, 8)
+	offsetQueryParamValue, exists := ctx.GetQuery("offset")
 
-	if err != nil {
-		http.Error(w, "Failed to parse 'limit' query parameter.", http.StatusBadRequest)
+	if exists {
+		offsetQueryParamParsedValue, err := strconv.ParseInt(offsetQueryParamValue, 0, 64)
 
-		return
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, &gin.H{
+				"code":    "InvalidQueryParameter",
+				"message": "Failed to parse 'offset' query parameter.",
+			})
+
+			return
+		}
+
+		offset = int(offsetQueryParamParsedValue)
+	} else {
+		offset = 0
 	}
 
-	if limit < 2 {
-		http.Error(w, "Query parameter value of 'limit' lower than 2.", http.StatusBadRequest)
-
-		return
-	} else if limit > 100 {
-		http.Error(w, "Query parameter value of 'limit' greater than 100.", http.StatusBadRequest)
-
-		return
-	}
-
-	offset, err := strconv.ParseInt(r.URL.Query().Get("offset"), 10, 64)
-
-	if err != nil {
-		http.Error(w, "Failed to parse 'offset' query parameter.", http.StatusBadRequest)
+	if limit < 2 || limit > 100 {
+		ctx.JSON(http.StatusBadRequest, &gin.H{
+			"code":    "BadRequest",
+			"message": "Query parameter 'limit' must be between 2 and 100.",
+		})
 
 		return
 	}
 
 	if offset < 0 {
-		http.Error(w, "Query parameter value of 'offset' must be positive integer.", http.StatusBadRequest)
+		ctx.JSON(http.StatusBadRequest, &gin.H{
+			"code":    "BadRequest",
+			"message": "Query parameter 'offset' must be greater than or equal to 0.",
+		})
 
 		return
 	}
 
-	polls, err := controller.repository.List(uint(limit), uint(offset))
+	polls, err := controller.service.List(ctx, limit, uint(offset))
 
 	if err != nil {
-		http.Error(w, "Failed to list polls.", http.StatusInternalServerError)
+		ctx.JSON(http.StatusInternalServerError, &gin.H{
+			"code":    "InternalServerError",
+			"message": "Failed to get polls.",
+		})
 
 		return
 	}
 
-	if polls == nil {
-		http.Error(w, "No polls found.", http.StatusNoContent)
+	if len(polls) == 0 {
+		ctx.JSON(http.StatusNoContent, &gin.H{
+			"code":    "NotFound",
+			"message": "No polls not found.",
+		})
 
 		return
 	}
 
-	switch acceptHeaderValue {
-	case "application/json":
-		var listedPolls []*application.ListPollsResponseBody
+	var listedPolls []*application.ListPollsResponseBody
 
-		for _, poll := range polls {
-			listedPolls = append(listedPolls, poll.IntoListPollsResponseBody())
-		}
-
-		if err = json.NewEncoder(w).Encode(&listedPolls); err != nil {
-			http.Error(w, "Failed to encode polls.", http.StatusInternalServerError)
-
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-
-		w.WriteHeader(http.StatusOK)
+	for _, poll := range polls {
+		listedPolls = append(listedPolls, poll.IntoListPollsResponseBody())
 	}
+
+	ctx.JSON(http.StatusOK, listedPolls)
 }

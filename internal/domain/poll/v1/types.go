@@ -50,8 +50,8 @@ type QuestionItem struct {
 func NewQuestionItemFromCreatePollRequestBodyQuestionItem(item *v1.CreatePollRequestBodyQuestionItem) *QuestionItem {
 	var choiceItems []*ChoiceItem
 
-	for _, choice := range item.Choices {
-		choiceItems = append(choiceItems, NewChoiceItemFromCreatePollRequestBodyQuestionChoiceItem(choice))
+	for _, createPollRequestQuestionChoiceItem := range item.Choices {
+		choiceItems = append(choiceItems, NewChoiceItemFromCreatePollRequestBodyQuestionChoiceItem(createPollRequestQuestionChoiceItem))
 	}
 
 	return &QuestionItem{
@@ -62,11 +62,11 @@ func NewQuestionItemFromCreatePollRequestBodyQuestionItem(item *v1.CreatePollReq
 	}
 }
 
-func (questionItem *QuestionItem) IntoCretePollResponseQuestionItem() *v1.CreatePollResponseBodyQuestionItem {
+func (questionItem *QuestionItem) IntoCretePollResponseBodyQuestionItem() *v1.CreatePollResponseBodyQuestionItem {
 	var createPollResponseBodyQuestionChoiceItems []*v1.CreatePollResponseBodyQuestionChoiceItem
 
-	for _, choice := range questionItem.Choices {
-		createPollResponseBodyQuestionChoiceItems = append(createPollResponseBodyQuestionChoiceItems, choice.IntoCreatePollResponseBodyQuestionChoiceItem())
+	for _, choiceItem := range questionItem.Choices {
+		createPollResponseBodyQuestionChoiceItems = append(createPollResponseBodyQuestionChoiceItems, choiceItem.IntoCreatePollResponseBodyQuestionChoiceItem())
 	}
 
 	return &v1.CreatePollResponseBodyQuestionItem{
@@ -93,15 +93,15 @@ func (questionItem *QuestionItem) IntoGetPollByIdResponseBodyQuestionItem() *v1.
 }
 
 func (questionItem *QuestionItem) IntoListPollsResponseBodyQuestionItem() *v1.ListPollsResponseBodyQuestionItem {
-	var listPollsResponseBodyChoiceItems []*v1.ListPollsResponseBodyQuestionChoiceItem
+	var listPollsResponseBodyQuestionChoiceItems []*v1.ListPollsResponseBodyQuestionChoiceItem
 
 	for _, choiceItem := range questionItem.Choices {
-		listPollsResponseBodyChoiceItems = append(listPollsResponseBodyChoiceItems, choiceItem.IntoListPollsResponseBodyQuestionChoiceItem())
+		listPollsResponseBodyQuestionChoiceItems = append(listPollsResponseBodyQuestionChoiceItems, choiceItem.IntoListPollsResponseBodyQuestionChoiceItem())
 	}
 
 	return &v1.ListPollsResponseBodyQuestionItem{
 		AllowMultipleChoices: questionItem.AllowMultipleChoices,
-		Choices:              listPollsResponseBodyChoiceItems,
+		Choices:              listPollsResponseBodyQuestionChoiceItems,
 		Position:             questionItem.Position,
 		Text:                 questionItem.Text,
 	}
@@ -116,17 +116,17 @@ type Poll struct {
 }
 
 func NewPollFromCreatePollRequestBody(body *v1.CreatePollRequestBody) *Poll {
-	var questions []*QuestionItem
+	var questionItems []*QuestionItem
 
-	for _, question := range body.Questions {
-		questions = append(questions, NewQuestionItemFromCreatePollRequestBodyQuestionItem(question))
+	for _, createPollRequestBodyQuestion := range body.Questions {
+		questionItems = append(questionItems, NewQuestionItemFromCreatePollRequestBodyQuestionItem(createPollRequestBodyQuestion))
 	}
 
 	return &Poll{
 		CreatedAt: time.Now().UTC(),
 		EndsAt:    body.EndsAt.UTC(),
 		ID:        uuid.New(),
-		Questions: questions,
+		Questions: questionItems,
 		Title:     body.Title,
 	}
 }
@@ -135,7 +135,7 @@ func (poll *Poll) IntoCreatePollResponseBody() *v1.CreatePollResponseBody {
 	var createPollResponseBodyQuestionItems []*v1.CreatePollResponseBodyQuestionItem
 
 	for _, question := range poll.Questions {
-		createPollResponseBodyQuestionItems = append(createPollResponseBodyQuestionItems, question.IntoCretePollResponseQuestionItem())
+		createPollResponseBodyQuestionItems = append(createPollResponseBodyQuestionItems, question.IntoCretePollResponseBodyQuestionItem())
 	}
 
 	return &v1.CreatePollResponseBody{

@@ -8,7 +8,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func Connect(uri string) (*mongo.Client, error) {
+func Connect(uri string) (*mongo.Database, error) {
 	options := options.Client().
 		ApplyURI(uri).
 		SetMaxPoolSize(10).
@@ -21,5 +21,7 @@ func Connect(uri string) (*mongo.Client, error) {
 		return nil, err
 	}
 
-	return client, nil
+	database := client.Database("public")
+
+	return database, nil
 }

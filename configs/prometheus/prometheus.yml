@@ -1,0 +1,35 @@
+alerting:
+  alertmanagers:
+    - timeout: 15s
+      api_version: v2
+      path_prefix: /
+      scheme: http
+      follow_redirects: false
+      static_configs:
+        - targets:
+            - 127.0.0.1:9090
+
+global:
+  scrape_interval: 15s
+  scrape_timeout: 5s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - follow_redirects: false
+    job_name: prometheus
+    metrics_path: /metrics
+    scheme: http
+    scrape_interval: 15s
+    scrape_timeout: 5s
+    static_configs:
+      - targets:
+        - 127.0.0.1:9090
+  - follow_redirects: false
+    job_name: poll-api
+    metrics_path: /metrics
+    scheme: http
+    scrape_interval: 15s
+    scrape_timeout: 5s
+    static_configs:
+      - targets:
+          - poll-api
