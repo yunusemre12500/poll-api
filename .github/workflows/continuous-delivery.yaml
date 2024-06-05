@@ -49,7 +49,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          builder: cloud
+          builder: multi-platform
           file: ./build/docker/Dockerfile
           push: true
           tags: ${{ steps.extract-metadata.outputs.tags }}
