@@ -28,7 +28,7 @@ jobs:
       - name: Set Up Docker Buildx
         uses: docker/setup-buildx-action@v3
         with:
-          driver: cloud
+          driver: remote
           endpoint: yunusemre12500/multi-platform
           version: lab:latest
 
