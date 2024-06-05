@@ -28,8 +28,9 @@ jobs:
       - name: Set Up Docker Buildx
         uses: docker/setup-buildx-action@v3
         with:
-          driver: remote
+          driver: cloud
           endpoint: yunusemre12500/multi-platform
+          install: true
           version: lab:latest
 
       - name: Extract Labels and Tags
