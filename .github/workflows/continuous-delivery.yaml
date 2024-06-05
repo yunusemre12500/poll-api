@@ -27,6 +27,7 @@ jobs:
         with:
           driver: cloud
           endpoint: yunusemre12500/multi-platform
+          version: lab:latest
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
