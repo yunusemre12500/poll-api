@@ -5,7 +5,7 @@ on:
     types: [released]
 
 jobs:
-  publish-to-ghcr:
+  publish-to-docker-hub:
     name: Publish to GitHub Container Registry
     if: ${{ github.repository_owner == 'yunusemre12500' }}
     runs-on: ubuntu-latest
