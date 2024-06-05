@@ -28,6 +28,7 @@ jobs:
           driver: cloud
           endpoint: yunusemre12500/multi-platform
           install: true
+          version: lab:latest
 
       - name: Extract Labels and Tags
         id: extract-metadata
@@ -45,6 +46,7 @@ jobs:
         with:
           context: .
           file: ./build/docker/Dockerfile
+          platform: linux/amd64,linux/arm64,linux/ppc64le,linux/s390x
           push: true
           tags: ${{ steps.extract-metadata.outputs.tags }}
           labels: ${{ steps.extract-metadata.outputs.labels }}
