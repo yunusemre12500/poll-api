@@ -6,13 +6,10 @@ on:
 
 jobs:
   publish-to-docker-hub:
-    name: Publish to GitHub Container Registry
+    name: Publish to Docker Hub
     if: ${{ github.repository_owner == 'yunusemre12500' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    permissions:
-      contents: read
-      packages: write
+    timeout-minutes: 5
     steps:
       - name: Check Out Repository
         uses: actions/checkout@v4
@@ -31,7 +28,6 @@ jobs:
           driver: cloud
           endpoint: yunusemre12500/multi-platform
           install: true
-          version: lab:latest
 
       - name: Extract Labels and Tags
         id: extract-metadata
